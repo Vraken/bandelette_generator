@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Raleway:wght@400;700&family=Sarabun:wght@400;700&display=swap');
+
+:root {
+    --bg-color: #f0f2f5;
+    --toolbar-bg: #ffffff;
+    --page-shadow: 0 0 10px rgba(0,0,0,0.1);
+    --border-color: #ddd;
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Toolbar */
+.toolbar {
+    background-color: var(--toolbar-bg);
+    padding: 10px 20px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar label {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: #f8f9fa;
+}
+
+button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* Page Container */
+#page-container {
+    flex-grow: 1;
+    overflow: auto;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+/* A4 Page */
+.a4-page {
+    background: white;
+    width: 210mm;
+    height: 297mm;
+    box-shadow: var(--page-shadow);
+    display: grid;
+    position: relative;
+    overflow: hidden;
+    transition: width 0.3s, height 0.3s;
+    flex-shrink: 0;
+}
+
+.a4-page.landscape {
+    width: 297mm;
+    height: 210mm;
+}
+
+.editable-area {
+    padding: 10mm;
+    outline: none;
+    overflow: hidden;
+    word-wrap: break-word;
+    border: 1px dashed transparent;
+    
+    /* Centrage et remplissage */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    width: 100%;
+}
+
+.a4-page:not(.print-mode) .editable-area:hover {
+    border-color: #ccc;
+}
+
+.a4-page:not(.print-mode) .editable-area:focus {
+    background-color: #fafafa;
+}
+
+/* Layout Modes */
+.layout-full {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+.layout-thirds {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, 99mm);
+}
+
+.layout-halves {
+    grid-template-columns: repeat(2, 105mm);
+    grid-template-rows: 1fr;
+}
+
+.layout-eight {
+    grid-template-columns: repeat(2, 105mm);
+    grid-template-rows: repeat(4, 74.25mm);
+}
+
+.layout-sixteen {
+    grid-template-columns: repeat(4, 52.5mm);
+    grid-template-rows: repeat(4, 74.25mm);
+}
+
+/* Landscape Specific Layouts */
+.layout-halves.landscape {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, 105mm);
+}
+
+.layout-sixteen.landscape {
+    grid-template-columns: repeat(4, 74.25mm);
+    grid-template-rows: repeat(4, 52.5mm);
+}
+
+/* Borders between strips (visible only on screen) */
+.layout-thirds .editable-area:not(:last-child) {
+    border-bottom: 1px dashed #eee;
+}
+
+.layout-halves:not(.landscape) .editable-area:not(:last-child) {
+    border-right: 1px dashed #eee;
+}
+
+.layout-halves.landscape .editable-area:not(:last-child) {
+    border-bottom: 1px dashed #eee;
+}
+
+.layout-eight .editable-area {
+    border: 0.5px dashed #eee;
+}
+
+.layout-sixteen .editable-area {
+    border: 0.5px dashed #eee;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    #page-container {
+        padding: 0;
+        margin: 0;
+        display: block;
+    }
+
+    .a4-page {
+        box-shadow: none;
+        margin: 0;
+        width: 210mm;
+        height: 297mm;
+        page-break-after: always;
+    }
+
+    .a4-page.landscape {
+        width: 297mm;
+        height: 210mm;
+    }
+
+    .editable-area {
+        border: none !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto; /* Allow browser to choose based on content size */
+    }
+}
+
