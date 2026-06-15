@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnHalves = document.getElementById('btn-halves');
     const btnEight = document.getElementById('btn-eight');
     const btnSixteen = document.getElementById('btn-sixteen');
+    const sizeSelector = document.getElementById('size-selector');
+    const btnHarmonize = document.getElementById('btn-harmonize');
     const btnPrint = document.getElementById('btn-print');
     const btnPdf = document.getElementById('btn-pdf');
     const btnImport = document.getElementById('btn-import');
@@ -22,6 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to fit text to container
     function autoFitText(element) {
+        const size = sizeSelector ? sizeSelector.value : 'auto';
+        if (size !== 'auto') {
+            element.style.fontSize = size + 'px';
+            return;
+        }
+
         const container = element;
         let minSize = 10;
         let maxSize = 500;
@@ -42,6 +50,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         container.style.fontSize = optimalSize + 'px';
+        if (harmonizeEnabled) {
+            const page = container.closest('.a4-page');
+            if (page) harmonizeFontSize(page);
+        }
+        if (typeof updateAutoLabel === 'function') updateAutoLabel();
+    }
+
+    let harmonizeEnabled = true;
+
+    function harmonizeFontSize(page) {
+        const areas = page.querySelectorAll('.editable-area');
+        const minSize = Math.min(...Array.from(areas).map(a => parseInt(a.style.fontSize) || 10));
+        areas.forEach(a => { a.style.fontSize = minSize + 'px'; });
+        updateAutoLabel();
     }
 
     // Function to create a page
@@ -56,8 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
             area.contentEditable = true;
             area.innerText = text;
             page.appendChild(area);
-            
-            // Auto-fit after appending
             setTimeout(() => autoFitText(area), 50);
         });
 
@@ -129,6 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Strip formatting on paste
+    pageContainer.addEventListener('paste', (e) => {
+        if (!e.target.classList.contains('editable-area')) return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
+
     // Handle input for auto-fit
     pageContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('editable-area')) {
@@ -147,13 +175,40 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.editable-area').forEach(autoFitText);
     });
 
+    function updateAutoLabel() {
+        const areas = Array.from(document.querySelectorAll('.editable-area'));
+        const autoOption = sizeSelector.querySelector('option[value="auto"]');
+        if (areas.length === 0) { autoOption.textContent = 'Auto'; return; }
+        const sizes = areas.map(a => parseInt(a.style.fontSize) || 0);
+        const allSame = sizes.every(s => s === sizes[0]);
+        autoOption.textContent = allSame ? `Auto (${sizes[0]})` : 'Auto';
+    }
+
+    // Size selection
+    sizeSelector.addEventListener('change', () => {
+        document.querySelectorAll('.editable-area').forEach(autoFitText);
+        if (sizeSelector.value === 'auto') updateAutoLabel();
+    });
+
     // Print & PDF
     function triggerPrint(filename = 'Document') {
         const oldTitle = document.title;
         document.title = filename;
+        const orientation = currentIsLandscape ? 'landscape' : 'portrait';
+        const pageStyle = document.createElement('style');
+        pageStyle.id = 'print-page-size';
+        pageStyle.textContent = `@media print { @page { size: A4 ${orientation}; margin: 0; } }`;
+        document.head.appendChild(pageStyle);
         window.print();
+        document.head.removeChild(pageStyle);
         document.title = oldTitle;
     }
+
+    btnHarmonize.addEventListener('click', () => {
+        harmonizeEnabled = !harmonizeEnabled;
+        btnHarmonize.classList.toggle('active', harmonizeEnabled);
+        if (harmonizeEnabled) document.querySelectorAll('.a4-page').forEach(harmonizeFontSize);
+    });
 
     btnPrint.addEventListener('click', () => triggerPrint('Bandelettes'));
     btnPdf.addEventListener('click', () => triggerPrint('Bandelettes'));
@@ -172,5 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize
+    btnHarmonize.classList.add('active');
     setLayout('layout-full', 1, true);
 });

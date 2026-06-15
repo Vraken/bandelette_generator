@@ -171,26 +171,27 @@ select {
     grid-template-rows: repeat(4, 52.5mm);
 }
 
-/* Borders between strips (visible only on screen) */
+/* Cut lines between strips */
 .layout-thirds .editable-area:not(:last-child) {
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed #aaa;
 }
 
 .layout-halves:not(.landscape) .editable-area:not(:last-child) {
-    border-right: 1px dashed #eee;
+    border-right: 1px dashed #aaa;
 }
 
 .layout-halves.landscape .editable-area:not(:last-child) {
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed #aaa;
 }
 
 .layout-eight .editable-area {
-    border: 0.5px dashed #eee;
+    border: 1px dashed #aaa;
 }
 
 .layout-sixteen .editable-area {
-    border: 0.5px dashed #eee;
+    border: 1px dashed #aaa;
 }
+
 
 /* Print Styles */
 @media print {
@@ -206,6 +207,7 @@ select {
         padding: 0;
         margin: 0;
         display: block;
+        overflow: hidden;
     }
 
     .a4-page {
@@ -222,12 +224,12 @@ select {
     }
 
     .editable-area {
-        border: none !important;
+        border-color: #aaa !important;
     }
 
     @page {
         margin: 0;
-        size: auto; /* Allow browser to choose based on content size */
+        size: A4 portrait;
     }
 }
 
