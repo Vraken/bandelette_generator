@@ -73,6 +73,12 @@ body {
 }
 
 button {
+    /* inline-flex + gap : aligne l'icône sur le texte et les espace, à la
+       place des vertical-align/margin-right qu'il fallait réajuster selon
+       que le bouton avait un libellé ou non. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 8px 12px;
     cursor: pointer;
     border: 1px solid var(--border-color);
@@ -102,14 +108,12 @@ button.active {
     background: var(--primary-hover);
 }
 
-.btn-icon {
-    vertical-align: -2px;
-    margin-right: 6px;
-}
-
-.btn-icon:only-child {
-    margin-right: 0;
-    vertical-align: -3px;
+/* "AA" tient lieu d'icône pour Majuscules : le dessiner en trait serait
+   moins lisible que les lettres elles-mêmes. */
+.btn-glyph {
+    font-weight: bold;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
 }
 
 button:disabled {
