@@ -47,22 +47,42 @@ test('harmonisation globale : une seule taille sur les 2 pages après import', a
   expect(overflow).toBe(true);
 });
 
-test("le bouton Harmoniser répare une page désynchronisée quand on le réactive", async ({ page }) => {
+test("la case Même taille par page répare une page désynchronisée quand on la recoche", async ({ page }) => {
   await expect
     .poll(async () => (await allFonts(page)).every((s) => s > 10), { timeout: 10000 })
     .toBe(true);
 
-  // Désactive puis casse l'uniformité à la main (bouton déjà actif = 1er clic désactive).
-  await page.click('#btn-harmonize');
-  await expect(page.locator('#btn-harmonize.active')).toHaveCount(0);
+  // Décoche puis casse l'uniformité à la main (la case est cochée par défaut).
+  await page.uncheck('#harmonize');
+  await expect(page.locator('#harmonize')).not.toBeChecked();
   await page.evaluate(() => {
     document.querySelectorAll('.editable-area')[0].style.fontSize = '250px';
   });
   expect(new Set(await allFonts(page)).size).toBeGreaterThan(1);
 
-  // Réactive : tout redevient uniforme d'un seul clic.
-  await page.click('#btn-harmonize');
-  await expect(page.locator('#btn-harmonize.active')).toHaveCount(1);
+  // Recoche : tout redevient uniforme d'un seul clic.
+  await page.check('#harmonize');
+  await expect(page.locator('#harmonize')).toBeChecked();
   const sizes = await allFonts(page);
   expect(new Set(sizes).size).toBe(1);
+});
+
+test('le champ Taille fixe la police et neutralise la case', async ({ page }) => {
+  await expect
+    .poll(async () => (await allFonts(page)).every((s) => s > 10), { timeout: 10000 })
+    .toBe(true);
+
+  // Taille auto : le placeholder annonce la taille calculée.
+  await expect(page.locator('#size-input')).toHaveAttribute('placeholder', /^Auto \(\d+\)$/);
+
+  // Taille fixe : appliquée partout, et la case n'a plus de sens.
+  await page.fill('#size-input', '48');
+  expect(await allFonts(page)).toEqual(new Array(6).fill(48));
+  await expect(page.locator('#harmonize')).toBeDisabled();
+
+  // Retour à vide : auto-ajustement, case réactivée.
+  await page.fill('#size-input', '');
+  await expect(page.locator('#harmonize')).toBeEnabled();
+  await expect.poll(async () => new Set(await allFonts(page)).size).toBe(1);
+  expect((await allFonts(page))[0]).toBeGreaterThan(48);
 });

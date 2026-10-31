@@ -40,6 +40,24 @@ body {
     gap: 10px;
 }
 
+/* Une case à cocher porte son propre état : son libellé n'est pas un
+   titre de section, contrairement aux autres labels de la barre. */
+.toolbar label.check {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.toolbar label.check:has(:disabled) {
+    opacity: 0.5;
+}
+
+#size-input {
+    width: 100px;  /* tient "Auto (196)" sans coupure */
+}
+
 .toolbar label {
     font-weight: bold;
     font-size: 0.9em;

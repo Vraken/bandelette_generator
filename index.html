@@ -18,30 +18,9 @@
         </div>
 
         <div class="toolbar-group">
-            <label for="size-selector">Taille :</label>
-            <select id="size-selector">
-                <option value="auto" selected>Auto</option>
-                <option value="10">10</option>
-                <option value="12">12</option>
-                <option value="14">14</option>
-                <option value="16">16</option>
-                <option value="18">18</option>
-                <option value="20">20</option>
-                <option value="24">24</option>
-                <option value="28">28</option>
-                <option value="32">32</option>
-                <option value="36">36</option>
-                <option value="42">42</option>
-                <option value="48">48</option>
-                <option value="60">60</option>
-                <option value="72">72</option>
-                <option value="96">96</option>
-                <option value="120">120</option>
-                <option value="144">144</option>
-                <option value="160">160</option>
-                <option value="180">180</option>
-                <option value="200">200</option>
-            </select>
+            <label for="size-input">Taille :</label>
+            <input type="number" id="size-input" min="6" max="500" placeholder="Auto">
+            <label class="check"><input type="checkbox" id="harmonize" checked> Même taille par page</label>
         </div>
 
         <div class="toolbar-group">
@@ -66,7 +45,6 @@
         </div>
 
         <div class="toolbar-group">
-            <button id="btn-harmonize">Harmoniser police</button>
             <button id="btn-uppercase">Majuscules</button>
             <button id="btn-print" class="btn-primary"><svg class="btn-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimer</button>
             <button id="btn-pdf">Enregistrer en PDF</button>

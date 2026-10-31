@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnHalves = document.getElementById('btn-halves');
     const btnEight = document.getElementById('btn-eight');
     const btnSixteen = document.getElementById('btn-sixteen');
-    const sizeSelector = document.getElementById('size-selector');
-    const btnHarmonize = document.getElementById('btn-harmonize');
+    const sizeInput = document.getElementById('size-input');
+    const harmonize = document.getElementById('harmonize');
     const btnUppercase = document.getElementById('btn-uppercase');
     const btnAlignCenter = document.getElementById('btn-align-center');
     const btnAlignLeft = document.getElementById('btn-align-left');
@@ -33,11 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // skipHarmonize=true : ne pas harmoniser (utilisé pour les traitements par lot,
     // où l'harmonisation se fait une seule fois après avoir ajusté toutes les zones)
     // Retourne la taille optimale, ou null si non mesurable (layout pas prêt).
+    // Champ Taille vide ou hors bornes = auto-ajustement ; sinon la taille
+    // à appliquer partout.
+    function fixedSize() {
+        const n = parseInt(sizeInput.value, 10);
+        return n >= 6 && n <= 500 ? n : null;
+    }
+
     function autoFitText(element, skipHarmonize = false, _retry = 0) {
-        const size = sizeSelector ? sizeSelector.value : 'auto';
-        if (size !== 'auto') {
-            element.style.fontSize = size + 'px';
-            return parseInt(size, 10);
+        const fixed = fixedSize();
+        if (fixed !== null) {
+            element.style.fontSize = fixed + 'px';
+            return fixed;
         }
 
         let optimal = null;
@@ -99,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.style.justifyContent = prevJustify;
         }
 
-        if (!skipHarmonize && harmonizeEnabled) {
+        if (!skipHarmonize && harmonize.checked) {
             const page = element.closest('.a4-page');
             if (page) harmonizeFontSize(page);
         }
@@ -107,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return optimal;
     }
 
-    let harmonizeEnabled = true;
     let uppercaseEnabled = false;
     let textAlign = 'center';
 
@@ -178,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fitAll = (retry = 0) => {
             const areas = Array.from(page.querySelectorAll('.editable-area'));
             const results = areas.map(area => autoFitText(area, true));
-            if (harmonizeEnabled) {
+            if (harmonize.checked) {
                 const min = harmonizeFontSize(page);
                 // Si rien n'était mesurable (layout pas prêt), réessayer.
                 if (min === null && results.includes(null) && retry < 5 && page.isConnected) {
@@ -367,31 +373,40 @@ document.addEventListener('DOMContentLoaded', () => {
         // puis harmoniser globalement (sinon tout s'écrase au min).
         const areas = Array.from(document.querySelectorAll('.editable-area'));
         areas.forEach(a => autoFitText(a, true));
-        if (harmonizeEnabled) {
+        if (harmonize.checked) {
             harmonizeAllPages();
         } else {
             updateAutoLabel();
         }
     });
 
+    // La taille calculée s'affiche dans le placeholder du champ : "Auto (36)".
     function updateAutoLabel() {
-        const areas = Array.from(document.querySelectorAll('.editable-area'));
-        const autoOption = sizeSelector.querySelector('option[value="auto"]');
-        if (areas.length === 0) { autoOption.textContent = 'Auto'; return; }
-        const sizes = areas.map(a => parseInt(a.style.fontSize) || 0);
-        const allSame = sizes.every(s => s === sizes[0]);
-        autoOption.textContent = allSame ? `Auto (${sizes[0]})` : 'Auto';
+        if (fixedSize() !== null) return;
+        const sizes = Array.from(document.querySelectorAll('.editable-area'), a => parseInt(a.style.fontSize) || 0);
+        const allSame = sizes.length > 0 && sizes.every(s => s === sizes[0]);
+        sizeInput.placeholder = allSame ? `Auto (${sizes[0]})` : 'Auto';
     }
 
-    // Size selection
-    sizeSelector.addEventListener('change', () => {
+    function refitAll() {
         const areas = Array.from(document.querySelectorAll('.editable-area'));
         areas.forEach(a => autoFitText(a, true));
-        if (sizeSelector.value === 'auto' && harmonizeEnabled) {
+        if (fixedSize() === null && harmonize.checked) {
             harmonizeAllPages();
         } else {
             updateAutoLabel();
         }
+    }
+
+    // Size selection
+    sizeInput.addEventListener('input', () => {
+        // Une taille fixe est déjà uniforme : la case n'a plus de sens.
+        harmonize.disabled = fixedSize() !== null;
+        refitAll();
+    });
+
+    harmonize.addEventListener('change', () => {
+        if (harmonize.checked) harmonizeAllPages();
     });
 
     // Print & PDF
@@ -419,12 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         window.print();
     }
-
-    btnHarmonize.addEventListener('click', () => {
-        harmonizeEnabled = !harmonizeEnabled;
-        btnHarmonize.classList.toggle('active', harmonizeEnabled);
-        if (harmonizeEnabled) harmonizeAllPages();
-    });
 
     btnUppercase.addEventListener('click', () => {
         syncFromDOM();
@@ -462,6 +471,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize
-    btnHarmonize.classList.add('active');
     setLayout('layout-full', 1, true);
 });
