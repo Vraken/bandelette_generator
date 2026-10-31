@@ -55,7 +55,7 @@ body {
 }
 
 #size-input {
-    width: 100px;  /* tient "Auto (196)" sans coupure */
+    width: 125px;  /* tient "Auto (196)" + la flèche du datalist */
 }
 
 .toolbar label {

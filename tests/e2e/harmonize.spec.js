@@ -72,6 +72,10 @@ test('le champ Taille fixe la police et neutralise la case', async ({ page }) =>
     .poll(async () => (await allFonts(page)).every((s) => s > 10), { timeout: 10000 })
     .toBe(true);
 
+  // Le champ propose les tailles courantes sans interdire une valeur libre.
+  await expect(page.locator('#size-input')).toHaveAttribute('list', 'size-list');
+  expect(await page.locator('#size-list option').count()).toBe(20);
+
   // Taille auto : le placeholder annonce la taille calculée.
   await expect(page.locator('#size-input')).toHaveAttribute('placeholder', /^Auto \(\d+\)$/);
 

@@ -19,7 +19,14 @@
 
         <div class="toolbar-group">
             <label for="size-input">Taille :</label>
-            <input type="number" id="size-input" min="6" max="500" placeholder="Auto">
+            <input type="number" id="size-input" min="6" max="500" placeholder="Auto" list="size-list">
+            <datalist id="size-list">
+                <option value="10"><option value="12"><option value="14"><option value="16">
+                <option value="18"><option value="20"><option value="24"><option value="28">
+                <option value="32"><option value="36"><option value="42"><option value="48">
+                <option value="60"><option value="72"><option value="96"><option value="120">
+                <option value="144"><option value="160"><option value="180"><option value="200">
+            </datalist>
             <label class="check"><input type="checkbox" id="harmonize" checked> Même taille par page</label>
         </div>
 
