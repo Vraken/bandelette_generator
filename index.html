@@ -60,9 +60,17 @@
         </div>
 
         <div class="toolbar-group">
+            <label>Alignement :</label>
+            <button id="btn-align-center" class="active" title="Centré" aria-label="Centré"><svg class="btn-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg></button>
+            <button id="btn-align-left" title="Gauche" aria-label="Gauche"><svg class="btn-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></button>
+        </div>
+
+        <div class="toolbar-group">
             <button id="btn-harmonize">Harmoniser police</button>
-            <button id="btn-print" class="btn-primary">Imprimer</button>
+            <button id="btn-uppercase">Majuscules</button>
+            <button id="btn-print" class="btn-primary"><svg class="btn-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimer</button>
             <button id="btn-pdf">Enregistrer en PDF</button>
+            <span id="print-warning" class="print-hint no-print">⚠ Impression : Marges « Aucune » + Échelle « Ajuster à la zone imprimable »</span>
             <button id="btn-import">Importer Liste</button>
             <button id="btn-reset">Remise à zéro</button>
         </div>
@@ -76,6 +84,20 @@
         </div>
     </main>
 
+    <div id="import-modal" class="modal-overlay no-print" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-title">
+            <h2 id="import-title">Importer une liste</h2>
+            <p class="modal-hint">Un élément par ligne — chaque ligne remplit un rectangle.</p>
+            <textarea id="import-text" rows="10" placeholder="Réunion de préparation&#10;5 min avant&#10;Après"></textarea>
+            <p id="import-count" class="modal-count" aria-live="polite"></p>
+            <div class="modal-actions">
+                <button id="btn-cancel-import">Annuler</button>
+                <button id="btn-do-import" class="btn-primary">Importer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="fit-utils.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

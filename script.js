@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSixteen = document.getElementById('btn-sixteen');
     const sizeSelector = document.getElementById('size-selector');
     const btnHarmonize = document.getElementById('btn-harmonize');
+    const btnUppercase = document.getElementById('btn-uppercase');
+    const btnAlignCenter = document.getElementById('btn-align-center');
+    const btnAlignLeft = document.getElementById('btn-align-left');
     const btnPrint = document.getElementById('btn-print');
     const btnPdf = document.getElementById('btn-pdf');
     const btnImport = document.getElementById('btn-import');
@@ -22,64 +25,183 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIsLandscape = true;
     let currentData = [placeholderText];
 
+    // Utilitaires purs (fit-utils.js, chargé avant ce script).
+    // Fallback local si le fichier est absent.
+    const FU = (typeof window !== 'undefined' && window.__fitUtils) || null;
+
     // Function to fit text to container
-    function autoFitText(element) {
+    // skipHarmonize=true : ne pas harmoniser (utilisé pour les traitements par lot,
+    // où l'harmonisation se fait une seule fois après avoir ajusté toutes les zones)
+    // Retourne la taille optimale, ou null si non mesurable (layout pas prêt).
+    function autoFitText(element, skipHarmonize = false, _retry = 0) {
         const size = sizeSelector ? sizeSelector.value : 'auto';
         if (size !== 'auto') {
             element.style.fontSize = size + 'px';
-            return;
+            return parseInt(size, 10);
         }
 
-        const container = element;
-        let minSize = 10;
-        let maxSize = 500;
-        let optimalSize = minSize;
-
-        container.style.fontSize = minSize + 'px';
-
-        while (minSize <= maxSize) {
-            let mid = Math.floor((minSize + maxSize) / 2);
-            container.style.fontSize = mid + 'px';
-
-            if (container.scrollHeight <= container.clientHeight && container.scrollWidth <= container.clientWidth) {
-                optimalSize = mid;
-                minSize = mid + 1;
-            } else {
-                maxSize = mid - 1;
+        let optimal = null;
+        if (FU) {
+            optimal = FU.autoFitElement(element);
+            if (optimal === null) {
+                // Mise en page pas prête (clientWidth/Height à 0) : ne pas figer
+                // à 10px, réessayer quand le layout sera fait (borné).
+                if (_retry < 5) {
+                    requestAnimationFrame(() => {
+                        if (element.isConnected) autoFitText(element, skipHarmonize, _retry + 1);
+                    });
+                }
+                return null;
             }
+        } else {
+            const container = element;
+            if (!container.clientWidth || !container.clientHeight) {
+                if (_retry < 5) {
+                    requestAnimationFrame(() => {
+                        if (element.isConnected) autoFitText(element, skipHarmonize, _retry + 1);
+                    });
+                }
+                return null;
+            }
+            let minSize = 10;
+            let maxSize = 500;
+            optimal = minSize;
+
+            // Pendant la mesure, aligner en haut à gauche : avec
+            // `align-items:center` le dépassement part en haut ET en bas,
+            // scrollHeight sous-estime la taille réelle → police trop grande
+            // qui vient toucher / chevaucher la ligne de découpe.
+            const prevAlign = container.style.alignItems;
+            const prevJustify = container.style.justifyContent;
+            container.style.alignItems = 'flex-start';
+            container.style.justifyContent = 'flex-start';
+
+            // Tolérance sous-pixels : scrollHeight vaut au minimum clientHeight,
+            // donc "ça tient" = scroll <= client + 1 (jamais client - marge).
+            const tolerance = 1;
+
+            container.style.fontSize = minSize + 'px';
+
+            while (minSize <= maxSize) {
+                let mid = Math.floor((minSize + maxSize) / 2);
+                container.style.fontSize = mid + 'px';
+
+                if (container.scrollHeight <= container.clientHeight + tolerance && container.scrollWidth <= container.clientWidth + tolerance) {
+                    optimal = mid;
+                    minSize = mid + 1;
+                } else {
+                    maxSize = mid - 1;
+                }
+            }
+
+            container.style.fontSize = optimal + 'px';
+            container.style.alignItems = prevAlign;
+            container.style.justifyContent = prevJustify;
         }
 
-        container.style.fontSize = optimalSize + 'px';
-        if (harmonizeEnabled) {
-            const page = container.closest('.a4-page');
+        if (!skipHarmonize && harmonizeEnabled) {
+            const page = element.closest('.a4-page');
             if (page) harmonizeFontSize(page);
         }
         if (typeof updateAutoLabel === 'function') updateAutoLabel();
+        return optimal;
     }
 
     let harmonizeEnabled = true;
+    let uppercaseEnabled = false;
+    let textAlign = 'center';
+
+    function applyTextAlign() {
+        const left = textAlign === 'left';
+        document.querySelectorAll('.a4-page').forEach(page => {
+            page.classList.toggle('align-left', left);
+        });
+        btnAlignCenter.classList.toggle('active', !left);
+        btnAlignLeft.classList.toggle('active', left);
+    }
+
+    // Texte affiché : en majuscules si le mode est actif (le placeholder
+    // et les cases vides restent inchangés). currentData garde la casse
+    // d'origine, le mode est donc réversible.
+    function displayText(text) {
+        if (!uppercaseEnabled) return text;
+        if (!text || text === placeholderText) return text;
+        return text.toLocaleUpperCase('fr-FR');
+    }
+
+    // Harmonisation GLOBALE (toutes les pages) : l'ancienne version par page
+    // laissait des tailles différentes d'une page à l'autre après import
+    // (ex: 6 lignes en tiers -> page 1 à 116px, page 2 à 232px), et le bouton
+    // déjà actif semblait alors "ne pas fonctionner".
+    function harmonizeAllPages() {
+        const areas = Array.from(document.querySelectorAll('.editable-area'));
+        let minSize;
+        if (FU) {
+            // Ignore les zones pas encore ajustées (fontSize vide) : c'est
+            // ce qui écrasait tout à 10px après "Importer Liste".
+            // Retourne null si aucune zone ajustée → ne touche à rien.
+            minSize = FU.harmonizeAreas(areas);
+        } else {
+            const parsed = areas.map(a => { const n = parseInt(a.style.fontSize, 10); return Number.isFinite(n) && n > 0 ? n : null; });
+            const valid = parsed.filter(n => n !== null);
+            if (valid.length === 0) { updateAutoLabel(); return null; }
+            minSize = Math.min(...valid);
+            areas.forEach(a => { a.style.fontSize = minSize + 'px'; });
+        }
+        updateAutoLabel();
+        return minSize;
+    }
 
     function harmonizeFontSize(page) {
-        const areas = page.querySelectorAll('.editable-area');
-        const minSize = Math.min(...Array.from(areas).map(a => parseInt(a.style.fontSize) || 10));
-        areas.forEach(a => { a.style.fontSize = minSize + 'px'; });
-        updateAutoLabel();
+        void page;
+        return harmonizeAllPages();
     }
 
     // Function to create a page
+    // Ajuste toutes les zones d'abord, puis harmonise une seule fois :
+    // sinon chaque ajustement individuel serait ramené au min des zones
+    // pas encore ajustées (10px par défaut), et tout resterait minuscule.
     function createPage(layoutClass, items, isLandscape) {
         const page = document.createElement('div');
         page.className = `a4-page ${layoutClass} ${isLandscape ? 'landscape' : ''}`;
         page.style.fontFamily = fontSelector.value;
+        if (textAlign === 'left') page.classList.add('align-left');
 
         items.forEach(text => {
             const area = document.createElement('div');
             area.className = 'editable-area';
             area.contentEditable = true;
-            area.innerText = text;
+            area.innerText = displayText(text);
             page.appendChild(area);
-            setTimeout(() => autoFitText(area), 50);
         });
+
+        const fitAll = (retry = 0) => {
+            const areas = Array.from(page.querySelectorAll('.editable-area'));
+            const results = areas.map(area => autoFitText(area, true));
+            if (harmonizeEnabled) {
+                const min = harmonizeFontSize(page);
+                // Si rien n'était mesurable (layout pas prêt), réessayer.
+                if (min === null && results.includes(null) && retry < 5 && page.isConnected) {
+                    requestAnimationFrame(() => fitAll(retry + 1));
+                    return;
+                }
+            } else {
+                updateAutoLabel();
+                if (results.includes(null) && retry < 5 && page.isConnected) {
+                    requestAnimationFrame(() => fitAll(retry + 1));
+                }
+            }
+        };
+
+        // Double rAF pour attendre la mise en page, + re-ajustement
+        // quand la police web (ex: Caveat Brush) est chargée.
+        requestAnimationFrame(() => requestAnimationFrame(fitAll));
+        setTimeout(fitAll, 50);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                if (page.isConnected) fitAll();
+            });
+        }
 
         return page;
     }
@@ -131,13 +253,60 @@ document.addEventListener('DOMContentLoaded', () => {
     btnEight.addEventListener('click', () => setLayout('layout-eight', 8, false));
     btnSixteen.addEventListener('click', () => setLayout('layout-sixteen', 16, true));
 
-    // Import logic
-    btnImport.addEventListener('click', () => {
-        const input = prompt("Collez votre liste ici (une ligne par rectangle) :");
-        if (input !== null) {
-            currentData = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            if (currentData.length === 0) currentData = [placeholderText];
-            renderPages();
+    // Import logic (fenêtre modale)
+    const importModal = document.getElementById('import-modal');
+    const importText = document.getElementById('import-text');
+    const importCount = document.getElementById('import-count');
+    const btnDoImport = document.getElementById('btn-do-import');
+    const btnCancelImport = document.getElementById('btn-cancel-import');
+
+    function parseImportLines(text) {
+        return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    }
+
+    function updateImportCount() {
+        const n = parseImportLines(importText.value).length;
+        const pages = Math.max(1, Math.ceil(n / currentCount));
+        importCount.textContent = n === 0
+            ? 'Liste vide'
+            : `${n} ligne${n > 1 ? 's' : ''} → ${pages} page${pages > 1 ? 's' : ''}`;
+        btnDoImport.disabled = n === 0;
+    }
+
+    function openImportModal() {
+        importText.value = (currentData.length === 1 && currentData[0] === placeholderText)
+            ? ''
+            : currentData.join('\n');
+        updateImportCount();
+        importModal.hidden = false;
+        importText.focus();
+    }
+
+    function closeImportModal() {
+        importModal.hidden = true;
+    }
+
+    function confirmImport() {
+        currentData = parseImportLines(importText.value);
+        if (currentData.length === 0) currentData = [placeholderText];
+        closeImportModal();
+        renderPages();
+    }
+
+    btnImport.addEventListener('click', openImportModal);
+    btnCancelImport.addEventListener('click', closeImportModal);
+    btnDoImport.addEventListener('click', confirmImport);
+    importModal.addEventListener('click', (e) => {
+        if (e.target === importModal) closeImportModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !importModal.hidden) closeImportModal();
+    });
+    importText.addEventListener('input', updateImportCount);
+    importText.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !btnDoImport.disabled) {
+            e.preventDefault();
+            confirmImport();
         }
     });
 
@@ -172,7 +341,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.a4-page').forEach(page => {
             page.style.fontFamily = e.target.value;
         });
-        document.querySelectorAll('.editable-area').forEach(autoFitText);
+        // Ajustement par lot : d'abord tout ajuster sans harmoniser,
+        // puis harmoniser globalement (sinon tout s'écrase au min).
+        const areas = Array.from(document.querySelectorAll('.editable-area'));
+        areas.forEach(a => autoFitText(a, true));
+        if (harmonizeEnabled) {
+            harmonizeAllPages();
+        } else {
+            updateAutoLabel();
+        }
     });
 
     function updateAutoLabel() {
@@ -186,28 +363,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Size selection
     sizeSelector.addEventListener('change', () => {
-        document.querySelectorAll('.editable-area').forEach(autoFitText);
-        if (sizeSelector.value === 'auto') updateAutoLabel();
+        const areas = Array.from(document.querySelectorAll('.editable-area'));
+        areas.forEach(a => autoFitText(a, true));
+        if (sizeSelector.value === 'auto' && harmonizeEnabled) {
+            harmonizeAllPages();
+        } else {
+            updateAutoLabel();
+        }
     });
 
     // Print & PDF
+    // Le <style> d'orientation est persistant : le supprimer juste après
+    // window.print() arrivait trop tôt (print asynchrone) et l'orientation
+    // retombait sur le @page par défaut → pages suivantes mal calibrées.
+    function ensurePrintStyle() {
+        let el = document.getElementById('print-page-size');
+        if (!el) {
+            el = document.createElement('style');
+            el.id = 'print-page-size';
+            document.head.appendChild(el);
+        }
+        return el;
+    }
     function triggerPrint(filename = 'Document') {
         const oldTitle = document.title;
         document.title = filename;
         const orientation = currentIsLandscape ? 'landscape' : 'portrait';
-        const pageStyle = document.createElement('style');
-        pageStyle.id = 'print-page-size';
+        const pageStyle = ensurePrintStyle();
         pageStyle.textContent = `@media print { @page { size: A4 ${orientation}; margin: 0; } }`;
-        document.head.appendChild(pageStyle);
+        window.onafterprint = () => {
+            document.title = oldTitle;
+            window.onafterprint = null;
+        };
         window.print();
-        document.head.removeChild(pageStyle);
-        document.title = oldTitle;
     }
 
     btnHarmonize.addEventListener('click', () => {
         harmonizeEnabled = !harmonizeEnabled;
         btnHarmonize.classList.toggle('active', harmonizeEnabled);
-        if (harmonizeEnabled) document.querySelectorAll('.a4-page').forEach(harmonizeFontSize);
+        if (harmonizeEnabled) harmonizeAllPages();
+    });
+
+    btnUppercase.addEventListener('click', () => {
+        uppercaseEnabled = !uppercaseEnabled;
+        btnUppercase.classList.toggle('active', uppercaseEnabled);
+        renderPages();
+    });
+
+    // Alignement : pas de ré-ajustement nécessaire (même largeur de
+    // retour à la ligne en centré et à gauche), centrage vertical conservé.
+    btnAlignCenter.addEventListener('click', () => {
+        textAlign = 'center';
+        applyTextAlign();
+    });
+
+    btnAlignLeft.addEventListener('click', () => {
+        textAlign = 'left';
+        applyTextAlign();
     });
 
     btnPrint.addEventListener('click', () => triggerPrint('Bandelettes'));

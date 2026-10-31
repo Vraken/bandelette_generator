@@ -75,10 +75,114 @@ button.active {
     background: var(--primary-hover);
 }
 
+.btn-icon {
+    vertical-align: -2px;
+    margin-right: 6px;
+}
+
+.btn-icon:only-child {
+    margin-right: 0;
+    vertical-align: -3px;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Fenêtre d'import (jamais imprimée : .no-print) */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal-overlay[hidden] {
+    display: none;
+}
+
+.modal {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    width: min(520px, 100%);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal h2 {
+    margin: 0 0 4px;
+    font-size: 1.1em;
+}
+
+.modal-hint {
+    margin: 0 0 12px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.modal textarea {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font: inherit;
+}
+
+.modal-count {
+    margin: 8px 0 0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
 select {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid var(--border-color);
+}
+
+/* Avertissement impression : infobulle visible uniquement au survol/focus
+   du bouton Imprimer (masquée sur papier via .no-print) */
+.toolbar-group {
+    position: relative;
+}
+
+@media screen {
+    .print-hint {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 50;
+        max-width: 280px;
+        white-space: normal;
+        font-size: 0.8em;
+        color: #856404;
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-radius: 4px;
+        padding: 6px 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    #btn-print:hover ~ .print-hint,
+    #btn-print:focus-visible ~ .print-hint,
+    .print-hint:hover {
+        display: block;
+    }
 }
 
 /* Page Container */
@@ -126,12 +230,24 @@ select {
     width: 100%;
 }
 
-.a4-page:not(.print-mode) .editable-area:hover {
-    border-color: #ccc;
-}
+/* Survol/focus : écran uniquement (jamais en print, pour des pointillés
+   toujours #aaa à l'impression). */
+@media screen {
+    .a4-page:not(.print-mode) .editable-area:hover {
+        border-color: #ccc;
+    }
 
 .a4-page:not(.print-mode) .editable-area:focus {
     background-color: #fafafa;
+}
+}
+
+/* Alignement du texte : centré par défaut, ou à gauche (texte multiligne
+   aligné à gauche, toujours centré verticalement).
+   Hors @media screen : doit aussi s'appliquer à l'impression. */
+.a4-page.align-left .editable-area {
+    text-align: left;
+    justify-content: flex-start;
 }
 
 /* Layout Modes */
@@ -172,8 +288,36 @@ select {
 }
 
 /* Cut lines between strips */
+.layout-thirds .editable-area {
+    /* Zone de sécurité : la ligne de découpe ne doit jamais toucher le texte */
+    padding-bottom: 12mm;
+    line-height: 1.25;
+}
+
 .layout-thirds .editable-area:not(:last-child) {
+    /* Lignes de découpe intérieures : visibles normalement. */
     border-bottom: 1px dashed #aaa;
+}
+
+.layout-thirds .editable-area:last-child {
+    position: relative;
+    /* Pas de border-bottom ici : collée au bord exact de la page, elle est
+       rognée par overflow:hidden (invisible à l'écran et dans l'aperçu).
+       La ligne est tracée 2px plus haut via ::after. */
+    border-bottom: 1px dashed transparent;
+}
+
+.layout-thirds .editable-area:last-child::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2px;
+    /* 2px et non 1px : à 1px, la ligne collée au bord de page est presque
+       invisible (rognage/arrondi sous-pixel au bord de overflow:hidden),
+       vérifié par capture Chromium. À 2px elle s'affiche nettement. */
+    border-bottom: 2px dashed #aaa;
+    pointer-events: none;
 }
 
 .layout-halves:not(.landscape) .editable-area:not(:last-child) {
@@ -195,7 +339,10 @@ select {
 
 /* Print Styles */
 @media print {
-    body {
+    html, body {
+        height: auto !important;
+        display: block !important;
+        overflow: visible !important;
         background: white;
     }
 
@@ -204,10 +351,11 @@ select {
     }
 
     #page-container {
-        padding: 0;
-        margin: 0;
-        display: block;
-        overflow: hidden;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        overflow: visible !important;
+        gap: 0;
     }
 
     .a4-page {
@@ -216,6 +364,15 @@ select {
         width: 210mm;
         height: 297mm;
         page-break-after: always;
+        break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: hidden;
+    }
+
+    .a4-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
     }
 
     .a4-page.landscape {
@@ -223,9 +380,21 @@ select {
         height: 210mm;
     }
 
-    .editable-area {
-        border-color: #aaa !important;
+    /* Tiers horizontal : uniquement des lignes de découpe horizontales,
+       aucune délimitation verticale à l'impression.
+       (Pas de règle générique border-color ici : elle forçait les 4 côtés
+       visibles et créait des verticales parasites / collait au texte.) */
+    .layout-thirds .editable-area {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        /* Marge de sécurité pour que la ligne de découpe ne touche pas le texte */
+        padding-bottom: 12mm;
+        line-height: 1.25;
     }
+
+    /* (Les lignes de découpe viennent des règles écran : border-bottom sur
+       les 2 premiers tiers + ::after 2px au-dessus du bord pour le dernier.) */
 
     @page {
         margin: 0;
