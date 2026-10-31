@@ -33,6 +33,7 @@ body {
     flex-wrap: wrap;
     gap: 10px 30px;
     align-items: center;
+    justify-content: center;
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
@@ -41,6 +42,10 @@ body {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    /* Centre aussi À L'INTÉRIEUR d'un groupe : sans ça un groupe plus large
+       que l'écran se replie en lignes calées à gauche sous une barre
+       pourtant centrée. */
+    justify-content: center;
     gap: 10px;
 }
 

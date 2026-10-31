@@ -12,6 +12,7 @@ const ICON_ONLY = {
   '#btn-align-center': 'Centré',
   '#btn-align-left': 'Gauche',
   '#btn-uppercase': 'Majuscules',
+  '#btn-print': 'Imprimer',
   '#btn-pdf': 'Enregistrer en PDF',
   '#btn-import': 'Importer Liste',
   '#btn-reset': 'Remise à zéro',
@@ -40,9 +41,7 @@ test("les mises en page portent un dessin, Majuscules porte ses lettres", async 
   await expect(page.locator('#btn-uppercase .btn-glyph')).toHaveText('AA');
 });
 
-// L'action principale et destructrice garde son texte : un bouton bleu muet
-// se cherche, et l'infobulle arrive après le clic.
-test('Imprimer garde son libellé à côté du pictogramme', async ({ page }) => {
-  await expect(page.locator('#btn-print')).toContainText('Imprimer');
+test('Imprimer reste reconnaissable sans libellé : seul bouton coloré', async ({ page }) => {
   await expect(page.locator('#btn-print svg.btn-icon')).toBeVisible();
+  await expect(page.locator('#btn-print')).toHaveClass(/btn-primary/);
 });

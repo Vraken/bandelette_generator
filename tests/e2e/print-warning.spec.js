@@ -22,5 +22,5 @@ test("l'avertissement marges n'apparaît qu'au survol du bouton Imprimer", async
 test('le bouton Imprimer porte une icône', async ({ page }) => {
   const icon = page.locator('#btn-print svg.btn-icon');
   await expect(icon).toBeVisible();
-  await expect(page.locator('#btn-print')).toContainText('Imprimer');
+  await expect(page.locator('#btn-print')).toHaveAttribute('title', 'Imprimer');
 });
