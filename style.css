@@ -218,7 +218,10 @@ select {
     padding: 10mm;
     outline: none;
     overflow: hidden;
-    word-wrap: break-word;
+    /* "anywhere" et pas "break-word" : seul le premier réduit la largeur
+       min-content de l'item flex. Avec break-word un mot long ne revenait
+       pas à la ligne, il forçait l'auto-ajustement à rapetisser le texte. */
+    overflow-wrap: anywhere;
     border: 1px dashed transparent;
     
     /* Centrage et remplissage */

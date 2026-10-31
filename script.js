@@ -229,8 +229,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Relit les pages dans currentData avant un re-rendu, pour que les saisies
+    // manuelles survivent à un changement de mise en page. Relire le DOM est
+    // plus sûr que de suivre chaque événement d'édition (un glisser-déposer ou
+    // une saisie IME ne déclenche pas toujours `input`).
+    // Une zone non modifiée garde sa valeur stockée : currentData conserve la
+    // casse d'origine, le mode majuscules reste donc réversible.
+    function syncFromDOM() {
+        const areas = Array.from(pageContainer.querySelectorAll('.editable-area'));
+        if (!areas.length) return;
+
+        const texts = areas.map((area, i) => {
+            const stored = currentData[i] ?? '';
+            if (area.innerText === displayText(stored)) return stored;
+            return area.innerText === placeholderText ? '' : area.innerText;
+        });
+        // Cases de remplissage de la dernière page : sans ça la liste gonfle
+        // à chaque passage en 16 rectangles et crée des pages blanches.
+        while (texts.length && texts[texts.length - 1] === '') texts.pop();
+        currentData = texts.length ? texts : [placeholderText];
+    }
+
     // Update layout state and render
     function setLayout(layoutClass, count, isLandscape = false) {
+        syncFromDOM();
         currentLayout = layoutClass;
         currentCount = count;
         currentIsLandscape = isLandscape;
@@ -405,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnUppercase.addEventListener('click', () => {
+        syncFromDOM();
         uppercaseEnabled = !uppercaseEnabled;
         btnUppercase.classList.toggle('active', uppercaseEnabled);
         renderPages();
