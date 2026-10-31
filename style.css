@@ -28,7 +28,10 @@ body {
     background-color: var(--toolbar-bg);
     padding: 10px 20px;
     display: flex;
-    gap: 30px;
+    /* Les groupes passent à la ligne au lieu de déborder : interligne plus
+       serré que l'écart entre groupes, pour qu'on lise encore les colonnes. */
+    flex-wrap: wrap;
+    gap: 10px 30px;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -37,7 +40,13 @@ body {
 .toolbar-group {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
+}
+
+/* Sans ça "Mise en page :" se coupe en trois lignes dès que ça serre. */
+.toolbar label {
+    white-space: nowrap;
 }
 
 /* Une case à cocher porte son propre état : son libellé n'est pas un
